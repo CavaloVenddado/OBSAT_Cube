@@ -12,7 +12,10 @@ void setup() {
     //cubesat.init();
     Serial.begin(115200);
     Serial2.begin(115200);
-    Serial2.flush(0);
+    while(Serial2.available()){
+        Serial2.read();
+    }
+    Serial2.flush();
     Serial.setDebugOutput(true);
     pinMode(PIN_SD_SS, OUTPUT);
     if(!SD.begin(PIN_SD_SS)){
@@ -31,12 +34,7 @@ void setup() {
    delay(10000);
 }
 int imgnum = 0;
-void loop()
-{
-    
-    //digitalWrite(LAMP_PIN, LOW); 
-    String path = "/picture" + String(imgnum) + ".jpg";
-
+void picture(String path){
     fs::FS &fs = SD; 
     Serial.printf("Picture file name: %s\n", path.c_str());
     
@@ -44,15 +42,20 @@ void loop()
     if(!file){
         Serial.println("Failed to open file in writing mode");
     }
-
-    delay(2000);
     myESPcamera.requestFrame();
     Serial.println("recv");
     myESPcamera.receiveFrame();
     Serial.println("writing");
     file.write(myESPcamera.imgBuf, myESPcamera.imgBufLen);
-    myESPcamera.freeFrame();
     file.close();
+    myESPcamera.freeFrame();
     Serial.println("done");
+}
+void loop()
+{
+    
+    //digitalWrite(LAMP_PIN, LOW); 
+    String name = "/picture" + String(imgnum) + ".jpg";
+    picture(name);
     imgnum ++;
 }
