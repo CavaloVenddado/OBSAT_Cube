@@ -10,6 +10,7 @@ class System{
     static void init(bool);
     static void initNoNetwork();
     static uint8_t battery;
+    static float batteryVoltage;
     static uint8_t getBattery();
     static SemaphoreHandle_t xI2C_semaphore;
     static float getTemperature();
