@@ -10,6 +10,14 @@
 #include "PION_Network.h"
 #include "PION_Interface.h"
 
+/*
+  Biblioteca de controle do CUBESAT da PION.
+  Modificada pela equipe Cavalo Vendado
+  contato: cavalo.vendado@gmail.com
+  código da PION é (meio que literalmente) quebrado. Busco resolver isso.
+  Programador principal: Felipe Trentin
+*/
+
 // Instantiate an I2C Handling Semaphore
 SemaphoreHandle_t System::xI2C_semaphore;
 
@@ -24,6 +32,7 @@ uint8_t initSuccess = 0;
 
 // System battery so everyone access
 uint8_t System::battery = 0;
+float System::batteryVoltage = 0;
 
 float battery = 0;
 void BatteryTask(void *pvParameters);
@@ -116,6 +125,7 @@ void System::init(bool original){
     interface.doBeeps(2,50,100);
     LOG("System::init");ENDL;
   }else{
+    /*  DOCUMENTAR ERROS NA WIKI!!!!!  */
     interface.setLed((((1 << ((uint8_t)(ERROR_BMP280-1))) & status)>>(ERROR_BMP280-1)) >= 1 ? ERROR_BMP280 : -1);
     interface.setLed((((1 << ((uint8_t)(ERROR_SHT20-1))) & status)>>(ERROR_SHT20-1)) >= 1 ? ERROR_SHT20 : -1);
     interface.setLed((((1 << ((uint8_t)(ERROR_MPU9250-1))) & status)>>(ERROR_MPU9250-1)) >= 1 ? ERROR_MPU9250 : -1);
@@ -157,7 +167,8 @@ void System::initNoNetwork(){
   status = sensors.init();
 
   // Initialize Storage
-  storage.init();
+  // disabled storage because of persistant crashing 
+  //storage.init();
 
   /* Check sensors initialization status and if it's OK, Beep and log initialization
   if it's false present the user through the LEDs which sensor is faulty */
@@ -201,10 +212,12 @@ void BatteryTask( void *pvParameters ){
     vTaskDelay(200);
     
     if(counter >= 50){
-      System::battery = mapfloat(calculateMovingAvg(batteryCache,50,VBAT_VOLTAGE(analogRead(BAT_SENSOR))), 3.5, 4.15, 0.0, 100.0);
+      System::batteryVoltage = calculateMovingAvg(batteryCache,50,VBAT_VOLTAGE(analogRead(BAT_SENSOR)));
+      System::battery = mapfloat(System::batteryVoltage, 3.5, 4.15, 0.0, 100.0); //curva da bateria não é linear, isso não expressa exatamente a capacidade utiliada
       battery = VBAT_VOLTAGE(analogRead(BAT_SENSOR));
     } else{
-      System::battery =  mapfloat(VBAT_VOLTAGE(analogRead(BAT_SENSOR)), 3.5, 4.15, 0.0, 100.0);
+      System::batteryVoltage = VBAT_VOLTAGE(analogRead(BAT_SENSOR));
+      System::battery =  mapfloat(System::batteryVoltage, 3.5, 4.15, 0.0, 100.0);
       battery = VBAT_VOLTAGE(analogRead(BAT_SENSOR));
       calculateMovingAvg(batteryCache,50,VBAT_VOLTAGE(analogRead(BAT_SENSOR)));
       counter++;
