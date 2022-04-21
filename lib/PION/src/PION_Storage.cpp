@@ -11,7 +11,9 @@
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
-
+/*
+  TODO: pelo amor de deus alguém descobre o motivo do código crashar, é logo em todo vTaskResume do SDTask
+*/
 SDStatus_t Storage::sdStatus = NO_SD;
 
 TaskHandle_t sdTask;
@@ -21,7 +23,7 @@ void createFileFirstLine(fs::FS &fs, const char * path);
 void appendFile(fs::FS &fs, const char * path, TickType_t time);
 
 const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
-char fileName[13] = FILE_BASE_NAME "00.csv";
+char fileName[] = FILE_BASE_NAME "00.csv";
 
 void Storage::init(){
   LOG("Storage::init");ENDL;
@@ -208,6 +210,7 @@ __attribute__((weak)) void createFileFirstLine(fs::FS &fs, const char * path){
         Serial.println("Falha ao abrir para escrita");
         return;
     }
+    //isso não seria legal de colocar em algum define... algo mais acessível ao usuário? aliás, o por que de não deixar espaço para payload???
     const char * message = "tempo(ms),temperatura(C),umidade(%),pressao(Pa),co2(ppm),luminosidade(%),acelX(m/s2),accelY,acelZ,giroX(graus/s),giroY,giroZ,magX(uT),magY,magZ,bateria(%)";
     if(file.println(message)){
         Serial.println("Escrita Começou");
