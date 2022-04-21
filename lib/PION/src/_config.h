@@ -3,7 +3,7 @@
 
 #include "Arduino.h"
 
-#define FILE_BASE_NAME                "/Dados"
+#define FILE_BASE_NAME                "/MissionData"
 
 ///////////// Make logging Easier
 #define LOG                           Serial.print
@@ -15,7 +15,7 @@
 
 #define BAT_R1                        100000
 #define BAT_R2                        100000
-#define BAT_DROP                      0.12
+#define BAT_DROP                      0.32//0.12original
 #define VBAT_VOLTAGE(adc)             (adc / (4096 / 3.3)) * (BAT_R1 + BAT_R2) * (1.0 / BAT_R2) + BAT_DROP
 
 // Inputs
