@@ -13,30 +13,45 @@ union imgPacket{
     uint8_t byteArray[frameDataSize];
 };
 
-
-
 imgPacket frameinformation;
-
+/**
+ * @brief Construct a new cam Companion::cam Companion object
+ * 
+ * @param camSerial serial port used by camera
+ */
 camCompanion::camCompanion(HardwareSerial &camSerial){
-    _camSerial = &camSerial;
+    camCompanion::_camSerial = &camSerial;
 }
 
-void camCompanion::receiveFrame(){
-    Serial2.write(0x11);
-    while(!Serial2.available()){
+/**
+ * @brief receive a frame from the camera, allocating buffer memory
+ * 
+ * @return true frame was received sucessfuly
+ * @return false frame was received partially
+ */
+bool camCompanion::receiveFrame(){
+    _camSerial->write(0x11);
+    while(!_camSerial->available()){
         
     }
-    Serial2.read(frameinformation.byteArray, frameDataSize);
-    Serial.print(frameinformation.Info.len);
+    _camSerial->read(frameinformation.byteArray, frameDataSize);
     imgBufLen = frameinformation.Info.len;
     imgBuf = (uint8_t *)malloc(imgBufLen);
     //Serial2.read(); //used to remove first NULL byte
-    Serial2.readBytes(imgBuf, imgBufLen);
+    size_t recvlen = Serial2.readBytes(imgBuf, imgBufLen);
+    return imgBufLen <= recvlen;
 }
+/**
+ * @brief send command to camera asking to take picture
+ * 
+ */
 void camCompanion::requestFrame(){
-    Serial2.write(0x10);
+    _camSerial->write(0x10);
 }
-
+/**
+ * @brief release allocated buffer memory
+ * 
+ */
 void camCompanion::freeFrame(){
     free(imgBuf);
 }
