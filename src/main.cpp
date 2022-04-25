@@ -4,10 +4,41 @@
 #include "SD.h"            // SD Card ESP32
 #include "cameraCompanion.h"
 #include "logger.h"
+#include "talker.h"
 
 camCompanion myESPcamera(Serial2);
 System cubesat;
 Logs myLogger;
+comms myTalker;
+
+/**
+ * @brief connects and sends json
+ * 
+ */
+void sendData(){
+    myLogger.log("Inicio de transmissão", INFO);
+    cubesat.setLed(L3, HIGH);
+    if(myTalker.connect()){
+        myLogger.log("Conectado com sucesso!", INFO);
+    }else{
+        myLogger.log("Erro na conexão!", ERROR);
+        cubesat.setRGB(RED);
+        cubesat.doBeeps(5,100,100);
+        cubesat.setRGB(OFF);
+        return;
+    }
+    cubesat.setLed(L3, LOW);
+    cubesat.setLed(L2, HIGH);
+    myLogger.log("enviandoJSON...", INFO);
+    if(myTalker.send()){
+        myLogger.log("Enviado com sucesso! (HTTP 200)", INFO);
+    }else{
+        myLogger.log("Erro na transmissão!", ERROR);
+    }
+    myTalker.disconnect();
+    cubesat.setLed(L2, LOW);
+}
+
 void setup() {
     cubesat.initNoNetwork();
     //Serial.begin(115200);
@@ -19,13 +50,11 @@ void setup() {
     }
     Serial2.flush();
     Serial.setDebugOutput(true);
-    //cubesat.doBeeps(3, 100, 500);
-    //cubesat.activateSDLog();
-    delay(10000);
     myLogger.log("Sistema iniciado", INFO);
+    sendData();
 }
-int imgnum = 0;
 
+int imgnum = 0;
 /**
  * @brief function for taking pictures with espcamera
  * 
@@ -42,13 +71,25 @@ void picture(String path, fs::FS &fs){
     }
     myESPcamera.requestFrame();//take picture
     Serial.println("recv");
+
     //log if the frame was not fully received
     if(!myESPcamera.receiveFrame()){
         myLogger.log("Frame ["+ path +"] was received partially", WARN);
     }
+    //write to sdcard
     Serial.println("writing");
     file.write(myESPcamera.imgBuf, myESPcamera.imgBufLen);
     file.close();
+
+    //confirms file size by opening file and counting bytes
+    File fileConfirm = fs.open(path.c_str(), FILE_READ);
+    size_t fileSize = fileConfirm.size();
+    fileConfirm.close();
+
+    //if they are not the same, we have a problem.
+    if(fileSize != myESPcamera.imgBufLen){
+        myLogger.log("Frame ["+ path +"] was written partially to card", WARN);
+    }
     myESPcamera.freeFrame();
     Serial.println("done");
 }
@@ -56,11 +97,11 @@ void picture(String path, fs::FS &fs){
 void loop()
 {
     //digitalWrite(LAMP_PIN, LOW); 
+    cubesat.setLed(L4, HIGH);
     String name = myLogger.extrasDirPath + String(imgnum) + ".jpg";
-    cubesat.setRGB(PURPLE);
     picture(name, SD);
-    cubesat.setRGB(OFF);
     imgnum ++;
+    cubesat.setLed(L4, LOW);
     cubesat.setLed(L1, HIGH);
     myLogger.log("imagem " + name + " capturada", DATA);
     myLogger.datalog();

@@ -146,6 +146,7 @@ void Logs::log(String message, logLevels level){
             break;
     }
     logFile.println(message);
+    logFile.close();
 }
 /**
  * @brief appends datalog file with sensor values.

@@ -34,7 +34,7 @@
 #define MCP23017_ADDR                 0x20
 
 // Corrections
-#define TEMPERATURE_CORRECTION        13.0
+#define TEMPERATURE_CORRECTION        0.0
 
 // FreeRTOS Core Definition
 #if CONFIG_FREERTOS_UNICORE

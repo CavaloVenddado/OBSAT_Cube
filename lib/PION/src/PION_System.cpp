@@ -223,7 +223,7 @@ void BatteryTask( void *pvParameters ){
       counter++;
     }
 
-    if (System::battery <= 15){
+    if (System::batteryVoltage <= 3.25){
       vTaskResume(interface.sirenTask);
       interface.sirenAction = ALARM_LOW_BATTERY;
     } else if(interface.sirenAction != ALARM_SIREN){
