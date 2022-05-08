@@ -1,2 +1,3 @@
 # OBSAT_Cube
-código do satélite da obsat 202, 2022, 2023 quem sabe....
+código do satélite da obsat
+sua função é enviar dados por HTTP via wifi e armazenar fotos e dados em um cartão sd
