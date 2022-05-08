@@ -7,6 +7,7 @@
 #include "talker.h"
 
 camCompanion myESPcamera(Serial2);
+
 System cubesat;
 Logs myLogger;
 comms myTalker;
@@ -15,7 +16,8 @@ comms myTalker;
  * @brief connects and sends json
  * 
  */
-void sendData(){
+bool sendData(){
+    bool success = false;
     myLogger.log("Inicio de transmissão", INFO);
     cubesat.setLed(L3, HIGH);
     if(myTalker.connect()){
@@ -25,18 +27,21 @@ void sendData(){
         cubesat.setRGB(RED);
         cubesat.doBeeps(5,100,100);
         cubesat.setRGB(OFF);
-        return;
+        return false;
     }
     cubesat.setLed(L3, LOW);
     cubesat.setLed(L2, HIGH);
     myLogger.log("enviandoJSON...", INFO);
     if(myTalker.send()){
         myLogger.log("Enviado com sucesso! (HTTP 200)", INFO);
+        success = true;
     }else{
         myLogger.log("Erro na transmissão!", ERROR);
+        success = false;
     }
     myTalker.disconnect();
     cubesat.setLed(L2, LOW);
+    return success;
 }
 
 void setup() {
@@ -51,7 +56,6 @@ void setup() {
     Serial2.flush();
     Serial.setDebugOutput(true);
     myLogger.log("Sistema iniciado", INFO);
-    sendData();
 }
 
 int imgnum = 0;
@@ -77,21 +81,34 @@ void picture(String path, fs::FS &fs){
         myLogger.log("Frame ["+ path +"] was received partially", WARN);
     }
     //write to sdcard
-    Serial.println("writing");
+    Serial.print("writing Bytes: ");
+    Serial.println(myESPcamera.imgBufLen);
     file.write(myESPcamera.imgBuf, myESPcamera.imgBufLen);
     file.close();
-
     //confirms file size by opening file and counting bytes
     File fileConfirm = fs.open(path.c_str(), FILE_READ);
     size_t fileSize = fileConfirm.size();
     fileConfirm.close();
-
     //if they are not the same, we have a problem.
     if(fileSize != myESPcamera.imgBufLen){
         myLogger.log("Frame ["+ path +"] was written partially to card", WARN);
+        Serial.println("oh no! my data :(");
+        Serial.print(fileSize);
+        Serial.print(" out of ");
+        Serial.print(myESPcamera.imgBufLen);
     }
     myESPcamera.freeFrame();
     Serial.println("done");
+}
+
+unsigned long lastSentMillis = 0;
+void tryData(){
+    if(millis() - lastSentMillis >= 240000){
+        lastSentMillis = millis();
+        while(!sendData()){
+            delay(10);
+        }
+    }
 }
 
 void loop()
@@ -106,4 +123,5 @@ void loop()
     myLogger.log("imagem " + name + " capturada", DATA);
     myLogger.datalog();
     cubesat.setLed(L1, LOW);
+    tryData();
 }

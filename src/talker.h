@@ -3,8 +3,8 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 //define constants
-#define WIFI_SSID "Trentin"
-#define WIFI_PASSWORD "99987597"
+#define WIFI_SSID "roboticawifi2.4g"
+#define WIFI_PASSWORD "roboticamedia123"
 #define NETWORK_SERVER "http://ptsv2.com/t/k5w4v-1650841701/post"
 #define CONNECTION_RETRY_COUNT 3
 #define CONNECTION_TIMEOUT 10000

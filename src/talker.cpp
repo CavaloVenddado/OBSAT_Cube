@@ -11,8 +11,7 @@ void onWifiConnected(WiFiEvent_t event)
     if(event == SYSTEM_EVENT_STA_DISCONNECTED){
         tries++;
     }
-    if (event != SYSTEM_EVENT_STA_GOT_IP)
-    return;
+    if (event != SYSTEM_EVENT_STA_GOT_IP) return;
     Serial.println("Connected!");
 }
 
@@ -27,6 +26,7 @@ bool comms::connect(){
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.print("Connecting");
     long startTime = millis();
+    tries = 0;
     while(WiFi.status() != WL_CONNECTED) {
         delay(50);
         Serial.print(".");
@@ -78,10 +78,7 @@ bool comms::send(){
     comms::payload["CO2"] = Sensors::CO2Level;
     comms::payload["Hum"] = round2(Sensors::humidity);
     comms::payload["fotos"] = 3;
-    JsonArray aval = comms::payload.createNestedArray("aval");
-    aval.add(0);
-    aval.add(1);
-    aval.add(2);
+    
     //prepare (serialize) data
     uint8_t * serializedBuf;
     size_t len = measureJson(jsonBuffer);
