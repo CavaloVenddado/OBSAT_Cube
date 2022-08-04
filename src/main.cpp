@@ -117,6 +117,7 @@ void loop()
     cubesat.setLed(L4, HIGH);
     String name = myLogger.extrasDirPath + String(imgnum) + ".jpg";
     picture(name, SD);
+    myTalker.photos_num = imgnum;
     imgnum ++;
     cubesat.setLed(L4, LOW);
     cubesat.setLed(L1, HIGH);

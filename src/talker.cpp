@@ -77,7 +77,7 @@ bool comms::send(){
     mag.add(round2(Sensors::mag[2]));
     comms::payload["CO2"] = Sensors::CO2Level;
     comms::payload["Hum"] = round2(Sensors::humidity);
-    comms::payload["fotos"] = 3;
+    comms::payload["fotos"] = "n"+String(photos_num);
     
     //prepare (serialize) data
     uint8_t * serializedBuf;
