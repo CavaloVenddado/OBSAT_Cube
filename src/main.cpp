@@ -22,6 +22,7 @@ bool sendData(){
     cubesat.setLed(L3, HIGH);
     if(myTalker.connect()){
         myLogger.log("Conectado com sucesso!", INFO);
+        Serial.print("sucesso na conexão!");
     }else{
         myLogger.log("Erro na conexão!", ERROR);
         cubesat.setRGB(RED);
@@ -34,6 +35,7 @@ bool sendData(){
     myLogger.log("enviandoJSON...", INFO);
     if(myTalker.send()){
         myLogger.log("Enviado com sucesso! (HTTP 200)", INFO);
+        Serial.print("sucesso no envio! response 200");
         success = true;
     }else{
         myLogger.log("Erro na transmissão!", ERROR);
@@ -102,12 +104,11 @@ void picture(String path, fs::FS &fs){
 }
 
 unsigned long lastSentMillis = 0;
+bool success = false;
 void tryData(){
-    if(millis() - lastSentMillis >= 240000){
+    if(millis() - lastSentMillis >= 240000 or !success){
         lastSentMillis = millis();
-        while(!sendData()){
-            delay(10);
-        }
+        success = sendData();
     }
 }
 
