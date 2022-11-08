@@ -4,7 +4,7 @@
 #include <ArduinoJson.h>
 //define constants
 #define TEAM_NUM 0 //this will be given on launch day
-#define WIFI_SSID "roboticawifi2.4g"
+#define WIFI_SSID "CUBESAT"
 #define WIFI_PASSWORD "roboticamedia123"
 #define NETWORK_SERVER "https://obsat.org.br/teste_post/envio.php"
 #define CONNECTION_RETRY_COUNT 3
@@ -19,6 +19,7 @@ class comms{
         void disconnect();
         JsonObject payload;
         uint16_t photos_num;
+        String framePath;
     private:
 
 };

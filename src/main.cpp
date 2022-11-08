@@ -106,10 +106,7 @@ void picture(String path, fs::FS &fs){
 unsigned long lastSentMillis = 0;
 bool success = false;
 void tryData(){
-    if(millis() - lastSentMillis >= 240000 or !success){
-        lastSentMillis = millis();
-        success = sendData();
-    }
+    success = sendData();
 }
 
 void loop()
@@ -118,6 +115,7 @@ void loop()
     cubesat.setLed(L4, HIGH);
     String name = myLogger.extrasDirPath + String(imgnum) + ".jpg";
     picture(name, SD);
+    myTalker.framePath = name;
     myTalker.photos_num = imgnum;
     imgnum ++;
     cubesat.setLed(L4, LOW);

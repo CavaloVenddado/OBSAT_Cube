@@ -6,7 +6,6 @@
 #include "PION_Storage.h"
 #include "PION_System.h"
 #include "PION_Sensors.h"
-#include "PION_Network.h"
 
 #include "FS.h"
 #include "SD.h"
@@ -111,9 +110,6 @@ void Storage::toggleSD(uint8_t type){
       createFileFirstLine(SD, fileName);
       Storage::sdStatus = SD_RECORDING;
       vTaskResume(sdTask);
-      if(type == 1){
-        Network::deInit();
-      }
       break;
     case SD_RECORDING:
       LOG("Escrita finalizada!");ENDL;

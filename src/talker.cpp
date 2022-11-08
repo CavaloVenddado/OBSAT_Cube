@@ -1,65 +1,89 @@
 #include "talker.h"
 #include <WiFi.h>
-#include <HTTPClient.h>
+#include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include "PION_Sensors.h"
 #include "PION_System.h"
-int tries = 0;
-void onWifiConnected(WiFiEvent_t event)
-{
-    Serial.printf("Wifi event: %i\n", event);
-    if(event == SYSTEM_EVENT_STA_DISCONNECTED){
-        tries++;
-    }
-    if (event != SYSTEM_EVENT_STA_GOT_IP) return;
-    Serial.println("Connected!");
-}
+#include "webpages.h"
+#include "SD.h"
+
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
+
 
 /**
  * @brief connect to wifi and server
- * 
+ *
  * @return true = connected with sucess
  * @return false = failed to connect
  */
-bool comms::connect(){
-    WiFi.onEvent(onWifiConnected);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.print("Connecting");
-    long startTime = millis();
-    tries = 0;
-    while(WiFi.status() != WL_CONNECTED) {
-        delay(50);
-        Serial.print(".");
-        if(tries >= CONNECTION_RETRY_COUNT or millis() > (startTime + CONNECTION_TIMEOUT)){//if maxed out retry or maxtime
-            WiFi.disconnect();
-            return 0;
+bool comms::connect()
+{
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(WIFI_SSID, WIFI_PASSWORD); // can configure to
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        // Send File
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", indexHTML);
+        request->send(response); 
+    });
+    server.on("/index.html", HTTP_GET, [](AsyncWebServerRequest *request){
+        // Send File
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", indexHTML);
+        request->send(response); 
+    });
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+        // Send File
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", indexCSS);
+        request->send(response); 
+    });
+    server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
+        // Send File
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", indexJS);
+        request->send(response); 
+    });
+    server.on("/frame.jpg", HTTP_GET, [this](AsyncWebServerRequest *request){
+        const File SDfile = SD.open(framePath, FILE_READ);
+        if (SDfile){
+            Serial.printf("[HTTP]\tSD File exists [%d]\r\n", SDfile);
+        } else {
+            Serial.printf("[HTTP]\tSD File DOESN'T exists [%d] <<< ERROR !!!\r\n", SDfile);
         }
+        AsyncWebServerResponse *response = request->beginChunkedResponse("text/css", [SDfile](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+            File SDLambdaFile = SDfile;                                   // Local copy of file pointer
+            Serial.printf("[HTTP]\t[%d]\tINDEX [%d]\tBUFFER_MAX_LENGHT [%d]\r\n", index, SDLambdaFile.size(), maxLen);
+            return SDLambdaFile.read(buffer, maxLen);
+        }
+        );
+        request->send(response);
     }
-    Serial.println();
-    Serial.print("Connected to WiFi network with IP Address: ");
-    Serial.println(WiFi.localIP());
-    return 1;
+    );
+    server.addHandler(&ws);
+    server.begin();
+    return true;
 }
 /**
  * @brief rounds values to 2 decimal points.
- * 
- * @param value 
- * @return double 
+ *
+ * @param value
+ * @return double
  */
-double round2(double value) {
-   return round(value * 100) / 100.0;
+double round2(double value)
+{
+    return round(value * 100) / 100.0;
 }
 /**
  * @brief constructs and serializes json, then sends via HTTP
- * 
- * @return true 
- * @return false 
+ *
+ * @return true
+ * @return false
  */
-bool comms::send(){
-    //generate json object
+bool comms::send()
+{
+    // generate json object
+    ws.cleanupClients();
     DynamicJsonDocument jsonBuffer(512);
     jsonBuffer["equipe"] = TEAM_NUM;
-    jsonBuffer["bateria"] = System::battery;
+    jsonBuffer["bateria"] = System::batteryVoltage;
     jsonBuffer["temperatura"] = Sensors::temperature;
     jsonBuffer["pressao"] = Sensors::pressure;
     JsonArray accel = jsonBuffer.createNestedArray("acelerometro");
@@ -70,43 +94,33 @@ bool comms::send(){
     gyro.add(Sensors::gyro[0]);
     gyro.add(Sensors::gyro[1]);
     gyro.add(Sensors::gyro[2]);
-    comms::payload = jsonBuffer.createNestedObject("payload");//max 90 bytes
+    comms::payload = jsonBuffer.createNestedObject("payload"); // max 90 bytes
     JsonArray mag = comms::payload.createNestedArray("mag");
     mag.add(round2(Sensors::mag[0]));
     mag.add(round2(Sensors::mag[1]));
     mag.add(round2(Sensors::mag[2]));
     comms::payload["CO2"] = Sensors::CO2Level;
-    comms::payload["Hum"] = round2(Sensors::humidity);
-    comms::payload["fotos"] = "n"+String(photos_num);
-    
-    //prepare (serialize) data
-    uint8_t * serializedBuf;
+    comms::payload["hum"] = round2(Sensors::humidity);
+    comms::payload["fotos"] = photos_num;
+
+    // Mede o tamanho do buffer do JSON
     size_t len = measureJson(jsonBuffer);
-    serializedBuf = (uint8_t *)malloc(len+1);
-    serializeJson(jsonBuffer, serializedBuf, len+1);
-    //print serialized buffer for debug
-    Serial.write(serializedBuf, len);
-    Serial.println();
-    //start sending data
-    HTTPClient http;
-    if(!http.begin(NETWORK_SERVER)){
-        free(serializedBuf);
-        return 0;
+    // Cria um espaço na RAM de (len + 1)
+    AsyncWebSocketMessageBuffer *buffer = ws.makeBuffer(len);
+    if (buffer)
+    {
+        // Transforma o JSON em um grande texto e o coloca no espaço criado anteriormente
+        serializeJson(jsonBuffer, (char *)buffer->get(), len + 1);
+        // Envia pelo WebSocket para todos os usuários
+        ws.textAll(buffer);
+        return true;
     }
-    Serial.println("connected");
-    uint responseCode = http.POST(serializedBuf, len);
-    Serial.print("response: ");
-    Serial.println(responseCode);
-    if(responseCode == 200){
-        return 1;
-    }else{
-        return 0;
-    }
-    free(serializedBuf);
-    return 1;
+    return false;
 }
-void comms::disconnect(){
-    if(WiFi.status() != WL_CONNECTED){
+void comms::disconnect()
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
         WiFi.disconnect();
     }
 }

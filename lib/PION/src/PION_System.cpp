@@ -7,7 +7,6 @@
 #include "PION_System.h"
 #include "PION_Storage.h"
 #include "PION_Sensors.h"
-#include "PION_Network.h"
 #include "PION_Interface.h"
 
 /*
@@ -46,7 +45,6 @@ float calculateMovingAvg(float * ,uint8_t ,float);
 
 Sensors sensors;
 Storage storage;
-Network network;
 Interface interface;
 
 // System Initialization 
@@ -66,8 +64,6 @@ void System::init(){
   }
   
   interface.init();
-  
-  network.init();
 
   status = Sensors::init();
 
@@ -113,8 +109,6 @@ void System::init(bool original){
   }
   
   interface.init(true);
-  
-  network.init();
 
   status = Sensors::init();
 
