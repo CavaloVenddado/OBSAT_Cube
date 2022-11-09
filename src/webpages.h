@@ -99,18 +99,18 @@ socket.addEventListener('message', (event) => {
 )rawliteral";
 const char indexCSS[] PROGMEM = R"rawliteral(
 :root {
-    background-color: #ffffff;
+    background-color: #8b59c4;
 }
 
 .flex-container {
     display: flex;
     flex-wrap: wrap;
-    background-color: #ff0000;
+    background-color: #8b59c4;
     width:100%;
 }
 
 .flex-container>div {
-    background-color: #f1f1f1;
+    background-color: #e1c9f8;
     width: max-content;
     min-height: 5%;
     line-height: 0.15;
@@ -127,7 +127,7 @@ const char indexCSS[] PROGMEM = R"rawliteral(
     border-radius: 5%;
     width: 100%;
     border-width: 2px;
-    border-color: #3cff00;
+    border-color: #42297c;
     height: fit-content;
 }
 .viewport>img{
@@ -137,7 +137,7 @@ const char indexCSS[] PROGMEM = R"rawliteral(
 .header{
     margin: auto;
     border-bottom: solid;
-    border-color: #3cff00;
+    border-color: #328bff;
 }
 .header>h1{
     text-align: center;
